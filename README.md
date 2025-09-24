@@ -1,50 +1,64 @@
-# Roda
+# Roda - Sistema de Cronogramas de Pago
 
-Sistema simple para gestionar créditos y cronogramas de pago (e‑bikes y e‑mopeds). La meta es poder correrlo localmente rápido y entender las decisiones clave sin ruido.
+**Contexto de negocio:** Roda financia e‑bikes/e‑mopeds para repartidores, tenderos y usuarios de estratos 1–3. El cronograma de pagos es la vista más consultada por clientes y por cobranzas: debe ser claro, rápido y confiable.
 
-## ¿Por qué FastAPI (y no Flask)?
+Esta aplicación fullstack permite a un repartidor ver cuánto pagar, cuándo y si está al día o en mora, construida con una API limpia que consulta PostgreSQL local y una UI moderna con la paleta de colores Roda.
 
-- FastAPI: tipado fuerte con Pydantic, validación automática y documentación OpenAPI lista sin esfuerzo. Permite iterar rápido sin sacrificar orden.
-- Flask: minimal y flexible, pero requiere más decisiones y librerías adicionales para lograr lo mismo (validación, esquemas, docs) y es más propenso a divergencias entre equipos.
-- Trade‑off aceptado: FastAPI introduce Pydantic en el centro del diseño (curva de entrada), pero a cambio ganamos coherencia del contrato de la API y productividad.
+## ¿Por qué FastAPI (vs Flask)?
 
-## Librerías clave (y por qué)
+**Decisión:** FastAPI sobre Flask (aunque se sugería Flask)
 
-- FastAPI + Uvicorn: framework asíncrono y server rápido para Python.
-- SQLAlchemy 2.0: ORM maduro, declarativo, portable; evita SQL manual repetitivo.
-- Pydantic v2: validación de entrada/salida y modelado claro del dominio.
-- PostgreSQL: relacional, confiable, buen soporte para agregaciones y consultas.
-- Frontend (opcional, carpeta `web/`): React + Vite + TanStack Query (data fetching), Tailwind (estilos), Axios (HTTP). Sirve para probar la API con una UI mínima.
+**Justificación:**
 
-## Requisitos
+- **Validación automática:** Pydantic integrado evita validaciones manuales repetitivas
+- **Documentación OpenAPI:** `/docs` generado automáticamente, crucial para APIs de pagos
+- **Type safety:** Previene errores en cálculos financieros con tipado fuerte
+- **Performance:** Asíncrono por defecto, mejor para consultas concurrentes de cronogramas
+- **Ecosistema moderno:** SQLAlchemy 2.0 + Pydantic v2 funcionan mejor juntos
+
+**Trade‑off aceptado:** Curva de aprendizaje vs. productividad y confiabilidad del código
+
+## Stack Tecnológico y Decisiones
+
+### Backend (Python)
+
+- **FastAPI + Uvicorn:** Framework asíncrono y server ASGI rápido
+- **SQLAlchemy 2.0:** ORM declarativo, consultas optimizadas con índices
+- **Pydantic v2:** Validación de entrada/salida y serialización segura
+- **PostgreSQL:** Base relacional local con datos de ejemplo incluidos
+
+### Frontend (React)
+
+- **React + TypeScript:** Componentes tipados para UI consistente
+- **Vite:** Build tool rápido para desarrollo
+- **TanStack Query:** Cache inteligente para cronogramas (evita re‑fetch innecesario)
+- **Tailwind CSS:** Estilos con paleta Roda: `#000000`, `#EBFF00`, `#C6F833`, `#B794F6`
+- **Axios:** Cliente HTTP con interceptores para manejo de errores
+
+## Instalación y Ejecución
+
+### Prerrequisitos
 
 - Python 3.11+
 - PostgreSQL 15+
+- Node.js 18+ (para frontend)
 - Git
-- (Opcional UI) Node 18+
 
-## Instalación rápida (backend)
-
-1. Clonar y ubicarse en `server/`:
+### 1. Backend (API)
 
 ```bash
 git clone <repository-url>
 cd server
-```
 
-2. Entorno virtual e instalación de dependencias:
-
-```bash
+# Entorno virtual
 python -m venv .server
-# Windows
-.server\Scripts\activate
-# Linux/Mac
-source .server/bin/activate
+# Windows: .server\Scripts\activate
+# Linux/Mac: source .server/bin/activate
 
 pip install -r requirements.txt
 ```
 
-3. Base de datos (nombre: roda)
+### 2. Base de datos local
 
 ```sql
 -- Conectarse como superusuario
@@ -53,26 +67,23 @@ CREATE USER roda_user WITH PASSWORD 'roda_password';
 GRANT ALL PRIVILEGES ON DATABASE roda TO roda_user;
 ```
 
-4. Variables de entorno (`server/.env`)
+```bash
+# Ejecutar schema y seed data
+psql -U roda_user -d roda
+\i sql/01_schema_seed.sql
+```
+
+### 3. Variables de entorno (`server/.env`)
 
 ```env
 DATABASE_URL=postgresql://roda_user:roda_password@localhost:5432/roda
 API_TITLE="Roda API"
 API_DESCRIPTION="Sistema de cronogramas de pago"
 API_VERSION="1.0.0"
-ALLOWED_ORIGINS=["http://localhost:5173", "http://localhost:3000"]
-DEFAULT_PAGE_SIZE=20
-MAX_PAGE_SIZE=100
+ALLOWED_ORIGINS=["http://localhost:5173"]
 ```
 
-5. Esquema y datos de ejemplo
-
-```bash
-psql -U roda_user -d roda
-\i sql/01_schema_seed.sql
-```
-
-6. Ejecutar la API
+### 4. Ejecutar API
 
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -80,11 +91,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
 
-## (Opcional) UI local
-
-1. En otra terminal:
+### 5. Frontend (opcional)
 
 ```bash
 cd web
@@ -92,26 +100,79 @@ npm install
 npm run dev
 ```
 
-2. La UI espera la API en `http://localhost:8000/api/v1` (coincide con la configuración por defecto del frontend).
+- UI: http://localhost:5173
 
-## Decisiones de modelado (trade‑offs)
+## Arquitectura y Trade‑offs de Modelado
 
-- Normalización moderada: se separan entidades `Cliente`, `Credito`, `PaymentSchedule` y `Pago` para mantener consultas legibles y evitar duplicación. Trade‑off: más joins, pero datos consistentes.
-- Estados en texto controlado (p.ej., `vigente`, `cancelado`, `pagada`, `vencida`): humano‑legible y fácil de depurar. Trade‑off: menos rigidez que un enum estricto a nivel BD.
-- Cálculos en tiempo real: agregados (totales, saldos, vencidos) se calculan en consultas con índices. Trade‑off: mayor costo por request vs. cache; se prioriza dato fresco.
-- Paginación por offset/limit simple: suficientemente clara y soportada por SQLAlchemy. Trade‑off: en datasets enormes convendría keyset pagination.
-- Monto como Decimal: evita errores de punto flotante en cálculos financieros. Trade‑off: más cuidado en serialización.
+### Decisiones de Diseño de Datos
 
-## Cómo validar rápido
+- **Normalización moderada:** Separación `Cliente` → `Credito` → `PaymentSchedule` → `Pago` para evitar duplicación y mantener consistencia
+- **Estados como texto:** `'vigente'`, `'pagada'`, `'vencida'` son human‑readable y fáciles de debuggear vs. enums estrictos
+- **Cálculos en tiempo real:** Saldos y estados se calculan con agregaciones SQL + índices vs. campos calculados cached
+- **Montos como Decimal:** Evita errores de punto flotante en cálculos financieros críticos
+
+### Performance y Consultas
+
+```sql
+-- Índices para cronogramas (ya incluidos en schema)
+CREATE INDEX ix_ps_credito_cuota ON core.payment_schedule(credito_id, num_cuota);
+CREATE INDEX ix_pagos_schedule_fecha ON core.pagos(schedule_id, fecha_pago);
+```
+
+- **Paginación offset/limit:** Simple y efectiva para datasets medianos
+- **Joins optimizados:** Una consulta vs. N+1 queries para cronogramas completos
+- **Agregaciones en PostgreSQL:** `SUM()`, `COUNT()`, `CASE` para cálculos vs. lógica en Python
+
+### API Design
+
+- **RESTful endpoints:** `/creditos/{id}/schedule` para cronogramas específicos
+- **Respuestas paginadas:** Metadata incluido (`total`, `pages`, `has_next`)
+- **Filtros query params:** `?page=1&size=20&estado=vigente`
+- **Manejo de errores:** HTTP status codes + mensajes descriptivos
+
+## Funcionalidades Implementadas
+
+### Core (Cronogramas)
+
+- Listado de créditos con paginación
+- Detalle de cronograma completo por crédito
+- Estados de cuotas (pendiente, pagada, vencida, parcial)
+- Cálculo de saldos y próximos pagos
+
+### Plus Features
+
+- Filtros por producto, estado, ciudad
+- Dashboard con analytics y métricas
+- Búsqueda de clientes (con debouncing)
+- UI responsiva con paleta Roda
+- API documentada automáticamente
+
+## Validación Rápida
 
 ```bash
 # Health check
 curl http://localhost:8000/health
-# Algunos listados
-curl "http://localhost:8000/api/v1/creditos/?page=1&size=5"
+
+# Cronograma específico
+curl http://localhost:8000/api/v1/creditos/1/schedule
+
+# Analytics dashboard
+curl http://localhost:8000/api/v1/creditos/analytics/overview
 ```
 
-## Notas breves
+## Estructura del Proyecto
 
-- No se impone estructura estricta ni lista exhaustiva de endpoints en este README; la documentación viva está en `/docs`.
-- El objetivo es poder correrlo local, leer este archivo en 3‑5 minutos y entender los porqués.
+```
+/
+├── server/          # Backend FastAPI
+│   ├── app/         # Código de la aplicación
+│   ├── sql/         # Schema y seed data
+│   └── .env         # Variables de entorno
+├── web/             # Frontend React
+│   └── src/         # Componentes y páginas
+└── README.md        # Este archivo
+```
+
+**Tiempo de desarrollo:** ~7 horas  
+**Enfoque:** Backend Python + Frontend React + PostgreSQL local con datos de ejemplo  
+**Objetivo:** Cronogramas claros, rápidos y confiables para repartidores Roda
