@@ -159,6 +159,3 @@ curl http://localhost:8000/api/v1/creditos/analytics/overview
 └── README.md        # Este archivo
 ```
 
-**Tiempo de desarrollo:** ~7 horas  
-**Enfoque:** Backend Python + Frontend React + PostgreSQL local con datos de ejemplo  
-**Objetivo:** Cronogramas claros, rápidos y confiables para repartidores Roda
