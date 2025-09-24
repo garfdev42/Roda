@@ -4,20 +4,6 @@
 
 Esta aplicación fullstack permite a un repartidor ver cuánto pagar, cuándo y si está al día o en mora, construida con una API limpia que consulta PostgreSQL local y una UI moderna con la paleta de colores Roda.
 
-## ¿Por qué FastAPI (vs Flask)?
-
-**Decisión:** FastAPI sobre Flask (aunque se sugería Flask)
-
-**Justificación:**
-
-- **Validación automática:** Pydantic integrado evita validaciones manuales repetitivas
-- **Documentación OpenAPI:** `/docs` generado automáticamente, crucial para APIs de pagos
-- **Type safety:** Previene errores en cálculos financieros con tipado fuerte
-- **Performance:** Asíncrono por defecto, mejor para consultas concurrentes de cronogramas
-- **Ecosistema moderno:** SQLAlchemy 2.0 + Pydantic v2 funcionan mejor juntos
-
-**Trade‑off aceptado:** Curva de aprendizaje vs. productividad y confiabilidad del código
-
 ## Stack Tecnológico y Decisiones
 
 ### Backend (Python)
