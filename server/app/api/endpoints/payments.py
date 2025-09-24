@@ -155,9 +155,9 @@ async def get_payments_summary(
         func.count(Pago.pago_id).label('total_payments'),
         func.sum(Pago.monto).label('total_amount'),
         func.avg(Pago.monto).label('average_amount'),
-        func.count(case([(Pago.medio == 'app', 1)])).label('app_payments'),
-        func.count(case([(Pago.medio == 'efectivo', 1)])).label('cash_payments'),
-        func.count(case([(Pago.medio == 'link', 1)])).label('link_payments')
+        func.count(case((Pago.medio == 'app', 1))).label('app_payments'),
+        func.count(case((Pago.medio == 'efectivo', 1))).label('cash_payments'),
+        func.count(case((Pago.medio == 'link', 1))).label('link_payments')
     ).join(PaymentSchedule)
     
     if credito_id:

@@ -1,17 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clientesApi } from "../services/api";
 import { Search, User, ChevronLeft, ChevronRight } from "lucide-react";
 
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 const Clientes = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["clientes", page, search],
+    queryKey: ["clientes", page, debouncedSearch],
     queryFn: () =>
-      clientesApi.getAll(page, 20, search || undefined).then((res) => res.data),
+      clientesApi
+        .getAll(page, 20, debouncedSearch || undefined)
+        .then((res) => res.data),
   });
+
+  useEffect(() => {
+    if (debouncedSearch !== search) return;
+    if (page !== 1) {
+      setPage(1);
+    }
+  }, [debouncedSearch]);
 
   if (isLoading) {
     return (

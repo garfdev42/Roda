@@ -62,9 +62,9 @@ class PaymentService:
         
         schedule_stats = self.db.query(
             func.count(PaymentSchedule.schedule_id).label('total_cuotas'),
-            func.count(func.case([(PaymentSchedule.estado == 'pagada', 1)])).label('cuotas_pagadas'),
-            func.count(func.case([(PaymentSchedule.estado == 'vencida', 1)])).label('cuotas_vencidas'),
-            func.count(func.case([(PaymentSchedule.estado.in_(['pendiente', 'parcial']), 1)])).label('cuotas_pendientes')
+            func.count(func.case((PaymentSchedule.estado == 'pagada', 1))).label('cuotas_pagadas'),
+            func.count(func.case((PaymentSchedule.estado == 'vencida', 1))).label('cuotas_vencidas'),
+            func.count(func.case((PaymentSchedule.estado.in_(['pendiente', 'parcial']), 1))).label('cuotas_pendientes')
         ).filter(PaymentSchedule.credito_id == credito_id).first()
         
         payment_amounts = self.db.query(

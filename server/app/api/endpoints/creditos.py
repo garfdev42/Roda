@@ -192,10 +192,10 @@ async def get_credits_overview(
     stats = db.query(
         func.count(Credito.credito_id).label('total_creditos'),
         func.sum(Credito.inversion).label('total_inversion'),
-        func.count(case([(Credito.estado == 'vigente', 1)])).label('creditos_vigentes'),
-        func.count(case([(Credito.estado == 'cancelado', 1)])).label('creditos_cancelados'),
-        func.count(case([(Credito.producto == 'e-bike', 1)])).label('e_bikes'),
-        func.count(case([(Credito.producto == 'e-moped', 1)])).label('e_mopeds')
+        func.count(case((Credito.estado == 'vigente', 1))).label('creditos_vigentes'),
+        func.count(case((Credito.estado == 'cancelado', 1))).label('creditos_cancelados'),
+        func.count(case((Credito.producto == 'e-bike', 1))).label('e_bikes'),
+        func.count(case((Credito.producto == 'e-moped', 1))).label('e_mopeds')
     ).first()
     
     return {
